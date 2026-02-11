@@ -89,12 +89,12 @@ class StewartPlatform33:
         lengths = {}
         lines = {}
         
-        # New: Dictionaries to store global coordinates for plotting triangles
+        # dictionaries to store global coordinates for plotting triangles
         base_coords = {}
         plat_coords = {}
 
         # target position and base position in base frame
-        T = np.array(target_pos)
+        T = np.array(target_pos) - np.array(base_pos)
         B = np.array(base_pos)
 
         # solve for leg lengths
@@ -127,14 +127,14 @@ if __name__ == '__main__':
 
     # give the target coords and rpy in deg
 
-    platform = StewartPlatform33(15, 15) # give base and platform radius
+    platform = StewartPlatform33(25, 15) # give base and platform radius
 
     # x y z
     # platform extends along the x axis, and is rotated 90 degrees about the y axis to become a tunnel instead of a tower
     base_pos = [0, 0, 0]
     base_rpy = [0, 90, 0]
-    target_pos = [50, 0, 0]
-    target_rpy = [0, 90, 0] # deg
+    target_pos = [35, 0, 15]
+    target_rpy = [15, 90, 0] # deg
 
     lengths, lines, base_pts, plat_pts = platform.solve_leg_lengths(base_pos, base_rpy, target_pos, target_rpy)
 
@@ -184,7 +184,7 @@ if __name__ == '__main__':
     platform_normal = np.array([0, 0, 1]) * 10 # want the normal to be 10 'units' away
 
     # transform normal from platform frame to base frame
-    base_frame_normal = R_current @ platform_normal\
+    base_frame_normal = R_current @ platform_normal
     
     # define start and end position of normal vector
     start = np.array(target_pos)
@@ -199,6 +199,16 @@ if __name__ == '__main__':
             arrow_length_ratio=0.1,
             label='Normal Vector'
         )
+    
+
+    # plot cylinder to visualize tunnel
+    def plot_cylinder(base_pos, base_rpy, plat_pos, plat_rpy):
+
+
+
+
+        pass
+
     
     ax.legend()
     ax.set_xlabel('x')
