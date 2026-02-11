@@ -127,8 +127,8 @@ if __name__ == '__main__':
 
     # x y z
     base_pos = [0, 0, 0]
-    target_pos = [0, 15, 50]
-    target_rpy = [10, 45, 0] # deg
+    target_pos = [0, 0, 50]
+    target_rpy = [0, 0, 0] # deg
 
     lengths, lines, base_pts, plat_pts = platform.solve_leg_lengths(base_pos, target_pos, target_rpy)
 
