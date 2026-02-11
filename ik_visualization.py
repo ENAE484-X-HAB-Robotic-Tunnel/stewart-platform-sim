@@ -202,12 +202,16 @@ if __name__ == '__main__':
     
 
     # plot cylinder to visualize tunnel
-    def plot_cylinder(base_pos, base_rpy, plat_pos, plat_rpy):
-
-
-
-
-        pass
+    def data_for_cylinder_along_z(center_z,center_y,radius,height_x):
+        x = np.linspace(0, height_x, 50)
+        theta = np.linspace(0, 2*np.pi, 50)
+        theta_grid, x_grid=np.meshgrid(theta, x)
+        z_grid = radius*np.cos(theta_grid) + center_z
+        y_grid = radius*np.sin(theta_grid) + center_y
+        return x_grid,y_grid,z_grid
+    
+    Xc,Yc,Zc = data_for_cylinder_along_z(0,0,3,target_pos[0])
+    ax.plot_surface(Xc, Yc, Zc, alpha=0.5)
 
     
     ax.legend()
