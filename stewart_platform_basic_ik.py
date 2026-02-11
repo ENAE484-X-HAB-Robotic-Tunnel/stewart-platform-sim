@@ -71,8 +71,9 @@ class StewartPlatform33:
 
         return Rz @ Ry @ Rx
     
-    def solve_leg_lengths(self, base_pos, target_pos, target_rpy):
+    def solve_leg_lengths(self, base_pos, base_rpy, target_pos, target_rpy):
         # 321 rotation matrix from base to target frame
+        R_base = self.get_rpy(base_rpy)
         R_plat = self.get_rpy(target_rpy)
 
         # define how the legs are connected
@@ -105,6 +106,9 @@ class StewartPlatform33:
             # Convert to base frame
             base_point = B + b_i
             plat_point = T + (R_plat @ p_i)
+
+            # rotate the base
+            base_point = R_base @ b_i
             
             # Store for plotting
             base_coords[base_key] = base_point
@@ -126,11 +130,13 @@ if __name__ == '__main__':
     platform = StewartPlatform33(15, 15) # give base and platform radius
 
     # x y z
+    # platform extends along the x axis, and is rotated 90 degrees about the y axis to become a tunnel instead of a tower
     base_pos = [0, 0, 0]
-    target_pos = [0, 0, 50]
-    target_rpy = [0, 0, 0] # deg
+    base_rpy = [0, 90, 0]
+    target_pos = [50, 0, 0]
+    target_rpy = [0, 90, 0] # deg
 
-    lengths, lines, base_pts, plat_pts = platform.solve_leg_lengths(base_pos, target_pos, target_rpy)
+    lengths, lines, base_pts, plat_pts = platform.solve_leg_lengths(base_pos, base_rpy, target_pos, target_rpy)
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -170,7 +176,7 @@ if __name__ == '__main__':
         
         ax.plot(points[0,:], points[1,:], points[2,:], color=color, linestyle='--')
 
-    plot_circle(base_pos, platform.r_base, [0,0,0], 'black')
+    plot_circle(base_pos, platform.r_base, base_rpy, 'black')
     plot_circle(target_pos, platform.r_plat, target_rpy, 'magenta')
 
     # calculate the Normal Vector
@@ -195,5 +201,8 @@ if __name__ == '__main__':
         )
     
     ax.legend()
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
     plt.axis('equal')
     plt.show()
