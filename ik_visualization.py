@@ -22,7 +22,7 @@ class StewartPlatform33:
 
         # Defining local base points, relative to the Base Center
         # Equilaterial Triangle
-        # A is at 0 degrees, B is at 120, C is at 240. (Standard CCW order)
+        # A is at 0 degrees, B is at 120, C is at 240.
         self.local_base_points = {
             'A': np.array([r_base, 0, 0]),
             'B': np.array([-0.5 * r_base, np.sqrt(3)/2 * r_base, 0]),  # Fixed: +Y for 120 deg
@@ -43,7 +43,7 @@ class StewartPlatform33:
 
         self.local_plat_points = {
             'D': Rz_60 @ np.array([r_plat, 0, 0]),
-            'E': Rz_60 @ np.array([-0.5 * r_plat, np.sqrt(3)/2 * r_plat, 0]), # Fixed signs here too to match
+            'E': Rz_60 @ np.array([-0.5 * r_plat, np.sqrt(3)/2 * r_plat, 0]),
             'F': Rz_60 @ np.array([-0.5 * r_plat, -np.sqrt(3)/2 * r_plat, 0])
         }
 
@@ -78,18 +78,19 @@ class StewartPlatform33:
 
         # define how the legs are connected
         leg_con = [
-            ('Leg1', 'A', 'D'), # Leg 1 connects Base A to Plat D
-            ('Leg2', 'B', 'D'), # Leg 2 connects Base B to Plat D
-            ('Leg3', 'B', 'E'), # ...
+            ('Leg1', 'A', 'D'), # Leg 1 connects base point A to plat point D
+            ('Leg2', 'B', 'D'), 
+            ('Leg3', 'B', 'E'), 
             ('Leg4', 'C', 'E'),
             ('Leg5', 'C', 'F'),
             ('Leg6', 'A', 'F')
         ]
 
+        # ik solution, leg length and leg vector
         lengths = {}
         lines = {}
         
-        # dictionaries to store global coordinates for plotting triangles
+        # storing coordinates to plot platform triangles
         base_coords = {}
         plat_coords = {}
 
@@ -103,14 +104,11 @@ class StewartPlatform33:
             b_i = self.local_base_points[base_key]
             p_i = self.local_plat_points[plat_key]
 
-            # Convert to base frame
-            base_point = B + b_i
+            # Convert to target frame to base frame
+            base_point = B + (R_base @ b_i)
             plat_point = T + (R_plat @ p_i)
-
-            # rotate the base
-            base_point = R_base @ b_i
             
-            # Store for plotting
+            # Store point coords for plotting
             base_coords[base_key] = base_point
             plat_coords[plat_key] = plat_point
 
@@ -121,48 +119,16 @@ class StewartPlatform33:
             lines[leg_name] = (base_point, plat_point)
 
         return lengths, lines, base_coords, plat_coords
-
-
-if __name__ == '__main__':
-
-    # give the target coords and rpy in deg
-
-    platform = StewartPlatform33(25, 15) # give base and platform radius
-
-    # x y z
-    # platform extends along the x axis, and is rotated 90 degrees about the y axis to become a tunnel instead of a tower
-    base_pos = [0, 0, 0]
-    base_rpy = [0, 90, 0]
-    target_pos = [35, 0, 15]
-    target_rpy = [15, 90, 0] # deg
-
-    lengths, lines, base_pts, plat_pts = platform.solve_leg_lengths(base_pos, base_rpy, target_pos, target_rpy)
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    # plot legs
-    for name, (start, end) in lines.items():
-        ax.plot(
-            [start[0], end[0]], # x
-            [start[1], end[1]], # y
-            [start[2], end[2]], # z
-            color='blue', linewidth=2
-        )
-
-    # plotting base and platform triangles showing the connection points
-    def plot_triangle(points, keys, color, label):
+    
+    def plot_triangle(self, points, keys, color, label):
         # draw a triangle from going to a -> b -> c -> a
         x = [points[k][0] for k in keys] + [points[keys[0]][0]] # A_x -> B_x -> C_x -> A_x
         y = [points[k][1] for k in keys] + [points[keys[0]][1]] # repeat for y
         z = [points[k][2] for k in keys] + [points[keys[0]][2]] # repeat for z
         ax.plot(x, y, z, color=color, label=label)
 
-    plot_triangle(base_pts, ['A', 'B', 'C'], 'black', 'Base')
-    plot_triangle(plat_pts, ['D', 'E', 'F'], 'magenta', 'Platform')
-
-    # plot platforms
-    def plot_circle(center, r, rpy=[0,0,0], color='black'):
+    def plot_circle(self, center, r, rpy=[0,0,0], color='black'):
+        # draw platform circle
         theta = np.linspace(0, 2*np.pi, 100)
         # Create circle in local XY plane
         xc = r * np.cos(theta) # x coord of circle
@@ -176,42 +142,104 @@ if __name__ == '__main__':
         
         ax.plot(points[0,:], points[1,:], points[2,:], color=color, linestyle='--')
 
-    plot_circle(base_pos, platform.r_base, base_rpy, 'black')
-    plot_circle(target_pos, platform.r_plat, target_rpy, 'magenta')
+    def plot_normal(self, ax, target_rpy):
+        # plot normal vector of target
+        R_plat = platform.get_rpy(target_rpy)
+        platform_normal = np.array([0, 0, 1]) # define normal of platform
 
-    # calculate the Normal Vector
-    R_current = platform.get_rpy(target_rpy)
-    platform_normal = np.array([0, 0, 1]) * 10 # want the normal to be 10 'units' away
+        # transform normal from platform frame to base frame
+        base_frame_normal = R_plat @ platform_normal
+        
+        ax.quiver(
+                target_pos[0], target_pos[1], target_pos[2],
+                base_frame_normal[0], base_frame_normal[1], base_frame_normal[2],
+                length=1,
+                color='green', 
+                linewidth=2,
+                arrow_length_ratio=0.1,
+                label='Normal Vector'
+            )
 
-    # transform normal from platform frame to base frame
-    base_frame_normal = R_current @ platform_normal
-    
-    # define start and end position of normal vector
-    start = np.array(target_pos)
-    end = start + base_frame_normal
-    
-    ax.quiver(
-            target_pos[0], target_pos[1], target_pos[2],
-            base_frame_normal[0], base_frame_normal[1], base_frame_normal[2],
-            length=1,
-            color='green', 
-            linewidth=2,
-            arrow_length_ratio=0.1,
-            label='Normal Vector'
-        )
-    
+    def plot_cylinder(self, ax, platform, base_pos, base_rpy, target_pos, target_rpy, radius, color='blue'):
+        # plotting the usable tunnel
 
-    # plot cylinder to visualize tunnel
-    def data_for_cylinder_along_z(center_z,center_y,radius,height_x):
-        x = np.linspace(0, height_x, 50)
+
+        # create base of cylinder
         theta = np.linspace(0, 2*np.pi, 50)
-        theta_grid, x_grid=np.meshgrid(theta, x)
-        z_grid = radius*np.cos(theta_grid) + center_z
-        y_grid = radius*np.sin(theta_grid) + center_y
-        return x_grid,y_grid,z_grid
+        xb = radius * np.cos(theta)
+        yb = radius * np.sin(theta)
+        zb = np.zeros_like(xb)
+        base_points = np.vstack([xb, yb, zb])
+
+        # rotate and translate to match base orientation
+        R_base = platform.get_rpy(base_rpy)
+        base_points = (R_base @ base_points) + np.array(base_pos).reshape(3, 1)
+
+        xt = radius * np.cos(theta)
+        yt = radius * np.sin(theta)
+        zt = np.zeros_like(xt)
+        target_points = np.vstack([xt, yt, zt])
+
+        # rotate and translate from base frame to target frame
+        R_target = platform.get_rpy(target_rpy)
+        target_points = (R_target @ target_points) + np.array(target_pos).reshape(3, 1)
+
+        # create a surface mesh to connect all the points
+
+        X = np.vstack([base_points[0], target_points[0]])
+        Y = np.vstack([base_points[1], target_points[1]])
+        Z = np.vstack([base_points[2], target_points[2]])
+
+        ax.plot_surface(X, Y, Z, color = color, alpha=0.3)
+
+
+if __name__ == '__main__':
+    base_r = 25
+    platform_r = 25
+
+    platform = StewartPlatform33(base_r, platform_r) # give base and platform radius
+
+    # give the target coords and rpy in deg
+    # x y z
+    # platform extends along the x axis, and is rotated 90 degrees about the y axis to become a tunnel instead of a tower
+    base_pos = [0, 0, 0]
+    base_rpy = [0, 90, 0]
+
+    # adjust as needed
+    target_pos = [35, 15, 15] # extension, translation in yz plane
+    target_rpy = [30, 90, 0] # deg
+
+    lengths, lines, base_pts, plat_pts = platform.solve_leg_lengths(base_pos, base_rpy, target_pos, target_rpy)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+
+    # plot legs
+    # manage connectivity, start and end position of each line in x, y, and z
+    for name, (start, end) in lines.items():
+        ax.plot(
+            [start[0], end[0]], # x
+            [start[1], end[1]], # y
+            [start[2], end[2]], # z
+            color='blue', linewidth=2
+        )
+
+    # plot triangle connecting legs on each platform
+    platform.plot_triangle(base_pts, ['A', 'B', 'C'], 'black', 'Base')
+    platform.plot_triangle(plat_pts, ['D', 'E', 'F'], 'magenta', 'Platform')
+
+    # plot platforms
+    platform.plot_circle(base_pos, platform.r_base, base_rpy, 'black')
+    platform.plot_circle(target_pos, platform.r_plat, target_rpy, 'magenta')
+
+    # plot the Normal Vector
+    platform.plot_normal(ax, target_rpy)
+
     
-    Xc,Yc,Zc = data_for_cylinder_along_z(0,0,3,target_pos[0])
-    ax.plot_surface(Xc, Yc, Zc, alpha=0.5)
+    # plot cylinder to visualize tunnel
+    vis_r = base_r * 0.8
+    platform.plot_cylinder(ax, platform, base_pos, base_rpy, target_pos, target_rpy, vis_r)
 
     
     ax.legend()
