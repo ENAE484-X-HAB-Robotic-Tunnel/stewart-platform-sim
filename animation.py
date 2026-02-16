@@ -14,12 +14,12 @@ def trajectory(center, radius, num_frames = 100):
     positions = []
     orientations = []
 
-    rot_count = 12
+    rot_count = 6
     rot_mod = rot_count * 2
 
     # create points for path
     t = np.linspace(0, 1, num_frames)
-    phi_max = np.deg2rad(30)
+    phi_max = np.deg2rad(20)
     phi = phi_max * t
     theta = rot_mod * np.pi * t
 
@@ -103,7 +103,8 @@ def update(frame_idx, platform, pos, rpy, ax):
     platform.plot_circle(ax, target_pos, platform.plat_r, target_rpy, 'magenta')
 
     # plot the Normal Vector
-    platform.plot_normal(ax, target_pos, target_rpy)
+    # platform.plot_normal(ax, target_pos, target_rpy)
+    # doesn't seem to work for the animation
 
     
     # plot cylinder to visualize tunnel
@@ -115,7 +116,7 @@ def update(frame_idx, platform, pos, rpy, ax):
     # plot trajectory
     ax.plot(pos[:,0], pos[:,1], pos[:,2], 'g--', alpha=0.3)
     # plot current target as a dot
-    ax.scatter(*target_pos, color='red', s=50)
+    ax.scatter(*target_pos, color='red', s=10)
 
     # axis and stuff
     ax.legend()
@@ -135,7 +136,7 @@ def main():
 
     num_frames = 500
 
-    trag_cen = [175, 0, 0]
+    trag_cen = [200, 0, 0]
     trag_r = 150
     path, path_rpy = trajectory(trag_cen, trag_r, num_frames)
 
@@ -153,7 +154,8 @@ def main():
 
     plt.show()
 
-    ani.save('stewart.gif', writer='pillow', fps=20)
+    # ani.save('stewart.gif', writer='pillow', fps=20)
+    # this is broken for some reason
 
 
 

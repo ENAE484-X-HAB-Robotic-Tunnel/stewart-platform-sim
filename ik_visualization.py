@@ -9,24 +9,23 @@ Solves for the leg lengths required for the Stewart Platform to reach a given x 
 
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 class StewartPlatform33:
-    def __init__(self, r_base, r_plat):
+    def __init__(self, base_r, plat_r):
         """
         Initialize the geometry of a 3-3 Stewart Platform
         """
 
-        self.r_base = r_base
-        self.r_plat = r_plat
+        self.base_r = base_r
+        self.plat_r = plat_r
 
         # Defining local base points, relative to the Base Center
         # Equilaterial Triangle
         # A is at 0 degrees, B is at 120, C is at 240.
         self.local_base_points = {
-            'A': np.array([r_base, 0, 0]),
-            'B': np.array([-0.5 * r_base, np.sqrt(3)/2 * r_base, 0]),  # Fixed: +Y for 120 deg
-            'C': np.array([-0.5 * r_base, -np.sqrt(3)/2 * r_base, 0])  # Fixed: -Y for 240 deg
+            'A': np.array([base_r, 0, 0]),
+            'B': np.array([-0.5 * base_r, np.sqrt(3)/2 * base_r, 0]),  # Fixed: +Y for 120 deg
+            'C': np.array([-0.5 * base_r, -np.sqrt(3)/2 * base_r, 0])  # Fixed: -Y for 240 deg
         }
 
         # Defining local platform points, relative to platform center
@@ -42,9 +41,9 @@ class StewartPlatform33:
         ])
 
         self.local_plat_points = {
-            'D': Rz_60 @ np.array([r_plat, 0, 0]),
-            'E': Rz_60 @ np.array([-0.5 * r_plat, np.sqrt(3)/2 * r_plat, 0]),
-            'F': Rz_60 @ np.array([-0.5 * r_plat, -np.sqrt(3)/2 * r_plat, 0])
+            'D': Rz_60 @ np.array([plat_r, 0, 0]),
+            'E': Rz_60 @ np.array([-0.5 * plat_r, np.sqrt(3)/2 * plat_r, 0]),
+            'F': Rz_60 @ np.array([-0.5 * plat_r, -np.sqrt(3)/2 * plat_r, 0])
         }
 
     def get_rpy(self, rpy):
@@ -73,8 +72,8 @@ class StewartPlatform33:
     
     def solve_leg_lengths(self, base_pos, base_rpy, target_pos, target_rpy):
         # 321 rotation matrix from base to target frame
-        R_base = self.get_rpy(base_rpy)
-        R_plat = self.get_rpy(target_rpy)
+        base_r = self.get_rpy(base_rpy)
+        plat_r = self.get_rpy(target_rpy)
 
         # define how the legs are connected
         leg_con = [
@@ -105,8 +104,8 @@ class StewartPlatform33:
             p_i = self.local_plat_points[plat_key]
 
             # Convert to target frame to base frame
-            base_point = B + (R_base @ b_i)
-            plat_point = T + (R_plat @ p_i)
+            base_point = B + (base_r @ b_i)
+            plat_point = T + (plat_r @ p_i)
             
             # Store point coords for plotting
             base_coords[base_key] = base_point
@@ -120,14 +119,14 @@ class StewartPlatform33:
 
         return lengths, lines, base_coords, plat_coords
     
-    def plot_triangle(self, points, keys, color, label):
+    def plot_triangle(self, ax, points, keys, color, label):
         # draw a triangle from going to a -> b -> c -> a
         x = [points[k][0] for k in keys] + [points[keys[0]][0]] # A_x -> B_x -> C_x -> A_x
         y = [points[k][1] for k in keys] + [points[keys[0]][1]] # repeat for y
         z = [points[k][2] for k in keys] + [points[keys[0]][2]] # repeat for z
         ax.plot(x, y, z, color=color, label=label)
 
-    def plot_circle(self, center, r, rpy=[0,0,0], color='black'):
+    def plot_circle(self, ax, center, r, rpy=[0,0,0], color='black'):
         # draw platform circle
         theta = np.linspace(0, 2*np.pi, 100)
         # Create circle in local XY plane
@@ -137,18 +136,18 @@ class StewartPlatform33:
         
         # apply rotation and translation
         points = np.vstack([xc, yc, zc])
-        R = platform.get_rpy(rpy) # get rotation matrix
+        R = self.get_rpy(rpy) # get rotation matrix
         points = R @ points + np.array(center).reshape(3, 1)
         
         ax.plot(points[0,:], points[1,:], points[2,:], color=color, linestyle='--')
 
-    def plot_normal(self, ax, target_rpy):
+    def plot_normal(self, ax, target_pos, target_rpy):
         # plot normal vector of target
-        R_plat = platform.get_rpy(target_rpy)
+        plat_r = self.get_rpy(target_rpy)
         platform_normal = np.array([0, 0, 1]) # define normal of platform
 
         # transform normal from platform frame to base frame
-        base_frame_normal = R_plat @ platform_normal
+        base_frame_normal = plat_r @ platform_normal
         
         ax.quiver(
                 target_pos[0], target_pos[1], target_pos[2],
@@ -160,7 +159,7 @@ class StewartPlatform33:
                 label='Normal Vector'
             )
 
-    def plot_cylinder(self, ax, platform, base_pos, base_rpy, target_pos, target_rpy, radius, color='blue'):
+    def plot_cylinder(self, ax, base_pos, base_rpy, target_pos, target_rpy, radius, color='blue'):
         # plotting the usable tunnel
 
 
@@ -172,8 +171,8 @@ class StewartPlatform33:
         base_points = np.vstack([xb, yb, zb])
 
         # rotate and translate to match base orientation
-        R_base = platform.get_rpy(base_rpy)
-        base_points = (R_base @ base_points) + np.array(base_pos).reshape(3, 1)
+        base_r = self.get_rpy(base_rpy)
+        base_points = (base_r @ base_points) + np.array(base_pos).reshape(3, 1)
 
         xt = radius * np.cos(theta)
         yt = radius * np.sin(theta)
@@ -181,7 +180,7 @@ class StewartPlatform33:
         target_points = np.vstack([xt, yt, zt])
 
         # rotate and translate from base frame to target frame
-        R_target = platform.get_rpy(target_rpy)
+        R_target = self.get_rpy(target_rpy)
         target_points = (R_target @ target_points) + np.array(target_pos).reshape(3, 1)
 
         # create a surface mesh to connect all the points
@@ -193,7 +192,7 @@ class StewartPlatform33:
         ax.plot_surface(X, Y, Z, color = color, alpha=0.3)
 
 
-if __name__ == '__main__':
+def main():
     base_r = 25
     platform_r = 25
 
@@ -226,20 +225,20 @@ if __name__ == '__main__':
         )
 
     # plot triangle connecting legs on each platform
-    platform.plot_triangle(base_pts, ['A', 'B', 'C'], 'black', 'Base')
-    platform.plot_triangle(plat_pts, ['D', 'E', 'F'], 'magenta', 'Platform')
+    platform.plot_triangle(ax, base_pts, ['A', 'B', 'C'], 'black', 'Base')
+    platform.plot_triangle(ax, plat_pts, ['D', 'E', 'F'], 'magenta', 'Platform')
 
     # plot platforms
-    platform.plot_circle(base_pos, platform.r_base, base_rpy, 'black')
-    platform.plot_circle(target_pos, platform.r_plat, target_rpy, 'magenta')
+    platform.plot_circle(ax, base_pos, platform.base_r, base_rpy, 'black')
+    platform.plot_circle(ax, target_pos, platform.plat_r, target_rpy, 'magenta')
 
     # plot the Normal Vector
-    platform.plot_normal(ax, target_rpy)
+    platform.plot_normal(ax, target_pos, target_rpy)
 
     
     # plot cylinder to visualize tunnel
     vis_r = base_r * 0.8
-    platform.plot_cylinder(ax, platform, base_pos, base_rpy, target_pos, target_rpy, vis_r)
+    platform.plot_cylinder(ax, base_pos, base_rpy, target_pos, target_rpy, vis_r)
 
     
     ax.legend()
@@ -248,3 +247,6 @@ if __name__ == '__main__':
     ax.set_zlabel('z')
     plt.axis('equal')
     plt.show()
+
+if __name__ == '__main__':
+    main()
