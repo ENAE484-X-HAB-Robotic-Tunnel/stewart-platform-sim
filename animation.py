@@ -19,7 +19,7 @@ def trajectory(center, radius, num_frames = 100):
 
     # create points for path
     t = np.linspace(0, 1, num_frames)
-    phi_max = np.deg2rad(20)
+    phi_max = np.deg2rad(30)
     phi = phi_max * t
     theta = rot_mod * np.pi * t
 
@@ -120,24 +120,29 @@ def update(frame_idx, platform, pos, rpy, ax):
 
     # axis and stuff
     ax.legend()
+    ax.set_xlim(-0, 15)
+    ax.set_ylim(-7.5, 7.5)
+    ax.set_zlim(-7.5, 7.5)
+
+
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_zlabel('z')
-    plt.axis('equal')
+    # plt.axis('equal')
 
 
 
 def main():
     # platform initialization
-    base_r = 25
+    base_r = 5
     plat_r = base_r
 
     platform = StewartPlatform33(base_r, plat_r)
 
     num_frames = 500
 
-    trag_cen = [200, 0, 0]
-    trag_r = 150
+    trag_cen = [25, 0, 0]
+    trag_r = 15
     path, path_rpy = trajectory(trag_cen, trag_r, num_frames)
 
     fig = plt.figure()

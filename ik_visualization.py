@@ -193,8 +193,9 @@ class StewartPlatform33:
 
 
 def main():
-    base_r = 25
-    platform_r = 25
+    base_r = 5      # ft
+    platform_r = 5  # ft
+
 
     platform = StewartPlatform33(base_r, platform_r) # give base and platform radius
 
@@ -204,9 +205,14 @@ def main():
     base_pos = [0, 0, 0]
     base_rpy = [0, 90, 0]
 
+
+    base_r = 5      # ft
+    platform_r = 5  # ft
+    target_pos = [12, 0, 7]     # (ft)         extension, translation in yz plane (ft)
+    target_rpy = [0, 105, 0]    # rpy (deg)
+
     # adjust as needed
-    target_pos = [35, 15, 15] # extension, translation in yz plane
-    target_rpy = [30, 90, 0] # deg
+
 
     lengths, lines, base_pts, plat_pts = platform.solve_leg_lengths(base_pos, base_rpy, target_pos, target_rpy)
 
