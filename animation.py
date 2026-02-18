@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-def trajectory(center, radius, num_frames = 100):
+def spiral_trajectory(center, radius, num_frames = 100):
     # creates a trajectory of a spherical cap
     # take the top then rotate it 90 deg about y
 
@@ -54,6 +54,23 @@ def trajectory(center, radius, num_frames = 100):
 
         rpy = [0, np.rad2deg(pitch), np.rad2deg(yaw)]
         orientations.append(rpy)
+
+    return positions, orientations
+
+def expand(distance, num_frames = 25):
+
+
+    start_pos = [0.5, 0, 0]
+
+    # # initialize arrays to store pos and orientation goal of platform
+    positions = []
+    orientations = []
+
+    steps = np.linspace(start_pos[0], distance, num_frames)
+
+    for x in steps:
+        positions.append([x, 0, 0])
+        orientations.append([0, 90, 0])
 
     return positions, orientations
 
@@ -139,11 +156,18 @@ def main():
 
     platform = StewartPlatform33(base_r, plat_r)
 
-    num_frames = 500
+    expand_frames = 100
+    spiral_frames = 500
+    num_frames = expand_frames + spiral_frames
 
     trag_cen = [25, 0, 0]
     trag_r = 15
-    path, path_rpy = trajectory(trag_cen, trag_r, num_frames)
+    expan_path, expan_rpy = expand(10, expand_frames)
+    spiral_path, spiral_rpy = spiral_trajectory(trag_cen, trag_r, spiral_frames)
+
+    path = expan_path + spiral_path
+    path_rpy = expan_rpy + spiral_rpy
+
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -158,11 +182,6 @@ def main():
     )
 
     plt.show()
-
-    # ani.save('stewart.gif', writer='pillow', fps=20)
-    # this is broken for some reason
-
-
 
 
 if __name__ == '__main__':
