@@ -156,17 +156,19 @@ def main():
 
     platform = StewartPlatform33(base_r, plat_r)
 
-    expand_frames = 100
-    spiral_frames = 500
-    num_frames = expand_frames + spiral_frames
+    # expand_frames = 100
+    # spiral_frames = 500
+    # num_frames = expand_frames + spiral_frames
 
-    trag_cen = [25, 0, 0]
-    trag_r = 15
-    expan_path, expan_rpy = expand(10, expand_frames)
-    spiral_path, spiral_rpy = spiral_trajectory(trag_cen, trag_r, spiral_frames)
+    # trag_cen = [25, 0, 0]
+    # trag_r = 15
+    # expan_path, expan_rpy = expand(10, expand_frames)
+    # spiral_path, spiral_rpy = spiral_trajectory(trag_cen, trag_r, spiral_frames)
 
-    path = expan_path + spiral_path
-    path_rpy = expan_rpy + spiral_rpy
+    # path = expan_path + spiral_path
+    # path_rpy = expan_rpy + spiral_rpy
+
+    
 
 
     fig = plt.figure()

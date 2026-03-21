@@ -9,6 +9,7 @@ Solves for the leg lengths required for the Stewart Platform to reach a given x 
 
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 class StewartPlatform33:
     def __init__(self, base_r, plat_r):
@@ -117,6 +118,7 @@ class StewartPlatform33:
             lengths[leg_name] = np.linalg.norm(leg_vec)
             lines[leg_name] = (base_point, plat_point)
 
+
         return lengths, lines, base_coords, plat_coords
     
     def plot_triangle(self, ax, points, keys, color, label):
@@ -193,7 +195,7 @@ class StewartPlatform33:
 
 
 def main():
-    base_r = 5      # ft
+    base_r = 7      # ft
     platform_r = 5  # ft
 
 
@@ -205,16 +207,17 @@ def main():
     base_pos = [0, 0, 0]
     base_rpy = [0, 90, 0]
 
-
-    base_r = 5      # ft
-    platform_r = 5  # ft
-    target_pos = [12, 0, 7]     # (ft)         extension, translation in yz plane (ft)
-    target_rpy = [0, 105, 0]    # rpy (deg)
+    target_pos = [10, 0, 5]     # (ft)         extension, translation in yz plane (ft)
+    target_rpy = [5, 95, -5]    # rpy (deg)
 
     # adjust as needed
 
-
+    start_time = time.time()
     lengths, lines, base_pts, plat_pts = platform.solve_leg_lengths(base_pos, base_rpy, target_pos, target_rpy)
+    end_time = time.time()
+
+    calc_ms = (end_time - start_time) * 1000
+    print(f'Calc time: {calc_ms} ms')
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -242,9 +245,9 @@ def main():
     platform.plot_normal(ax, target_pos, target_rpy)
 
     
-    # plot cylinder to visualize tunnel
-    vis_r = base_r * 0.8
-    platform.plot_cylinder(ax, base_pos, base_rpy, target_pos, target_rpy, vis_r)
+    # # plot cylinder to visualize tunnel
+    # vis_r = base_r * 0.8
+    # platform.plot_cylinder(ax, base_pos, base_rpy, target_pos, target_rpy, vis_r)
 
     
     ax.legend()
@@ -253,6 +256,8 @@ def main():
     ax.set_zlabel('z')
     plt.axis('equal')
     plt.show()
+
+
 
 if __name__ == '__main__':
     main()
