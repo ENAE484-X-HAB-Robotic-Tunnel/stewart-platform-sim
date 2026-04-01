@@ -74,6 +74,29 @@ def expand(distance, num_frames = 25):
 
     return positions, orientations
 
+def gen_trajectory(X_init, X_goal, N = 5):
+    """
+    X_init: initial xyz, rpy of the platform
+    X_goal: targoet xyz, rpy of the platform (this is where the docking position is)
+
+    N     : number of steps (frames here)
+    """
+    X_init = np.array(X_init)
+    X_goal = np.array(X_goal)
+    path = []
+
+    trag_frac = np.linspace(0, 1, N)
+    # number of steps
+    X_curr = X_init
+    path.append(X_init)
+
+    for frac in trag_frac:
+        X_curr = X_init + (X_goal - X_curr) * frac
+        #   
+        path.append(X_curr)
+
+    return path
+
 def update(frame_idx, platform, pos, rpy, ax):
     """
     Handles updating the animation
@@ -155,6 +178,8 @@ def main():
     plat_r = base_r
 
     platform = StewartPlatform33(base_r, plat_r)
+    X_init = [1, 0, 0, 0, 90, 0]
+    X_goal = [10, 2, 3, 5, 85, 15]
 
     # expand_frames = 100
     # spiral_frames = 500
@@ -167,6 +192,11 @@ def main():
 
     # path = expan_path + spiral_path
     # path_rpy = expan_rpy + spiral_rpy
+
+    ani_frame = 500
+
+    path = gen_trajectory(X_init, X_goal, ani_frame)
+    
 
     
 

@@ -130,7 +130,8 @@ def main():
 
     base_r = 7
     platform_r = 5
-    offset_angle = 5
+    offset_angle = 7 # degree offset total between two points (3.5 deg for half angle)
+    
 
     platform = StewartPlatform(base_r, platform_r, offset_angle = offset_angle)
 
