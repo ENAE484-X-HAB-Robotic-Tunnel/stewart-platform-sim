@@ -16,7 +16,7 @@ import numpy as np
 from inverse_kinematics import StewartPlatform
 from jacobian import jacobian
 
-def forward_kinenmatics(platform, X_prev, d_goal):
+def forward_kinematics(platform, X_prev, d_goal):
     """
     Inputs:
     X_prev - xyz rpy of the previous state
@@ -27,7 +27,7 @@ def forward_kinenmatics(platform, X_prev, d_goal):
     X - Approximated state
     """
     tolerance = 0.001
-    X_current = np.array(X_prev, dtype=float)
+    X_current = np.array(X_prev)
 
     for _ in range(1000):
         p = X_current[:3]
@@ -89,7 +89,7 @@ def main():
 
     d_goal, _, _, _ = platform.solve_ik(X_base, X_goal)
 
-    print(forward_kinenmatics(platform, X_prev, d_goal))
+    print(forward_kinematics(platform, X_prev, d_goal))
 
 if __name__ == '__main__':
     main()
