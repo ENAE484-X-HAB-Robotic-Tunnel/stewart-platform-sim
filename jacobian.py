@@ -9,7 +9,7 @@ def jacobian(platform, X=[0, 0, 0, 0, 0, 0]):
     # define connections for base and plat points, leg 1 is point index 1 in base to point index 0 in plat
     leg_con_indices = [(1,0), (2,1), (3,2), (4,3), (5,4), (0,5)]
 
-    _, _, B, _ = platform.solve_ik(platform.X_base, X)  # Bug 1: use X, not X_plat
+    _, _, B, _ = platform.solve_ik(platform.X_base, X)
 
     t = np.array(X[0:3])
     Rot = platform.rpy2rot(X[3:])
