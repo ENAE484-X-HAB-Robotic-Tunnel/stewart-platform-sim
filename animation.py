@@ -1,23 +1,16 @@
 from ik_visualization import StewartPlatform33
-
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 def spiral_trajectory(center, radius, num_frames = 100):
-    # creates a trajectory of a spherical cap
-    # take the top then rotate it 90 deg about y
-
     center = np.array(center)
-
-    # initialize arrays to store pos and orientation goal of platform
     positions = []
     orientations = []
 
     rot_count = 6
     rot_mod = rot_count * 2
 
-    # create points for path
     t = np.linspace(0, 1, num_frames)
     phi_max = np.deg2rad(30)
     phi = phi_max * t
@@ -29,7 +22,6 @@ def spiral_trajectory(center, radius, num_frames = 100):
 
     points = np.vstack([xs, ys, zs])
     
-    # align with tunnel
     Ry_90 = np.array([
         [0, 0, -1],
         [0, 1, 0],
@@ -39,16 +31,13 @@ def spiral_trajectory(center, radius, num_frames = 100):
     points = Ry_90 @ points
 
     for i in range(num_frames):
-        # translate points to 'center' of sphere
         local_p = points[:, i]
         global_p = local_p + center
         positions.append(global_p)
 
-        # calculate orientaion for platform to look at the center of the sphere
         vec_p_cen = center - global_p
         v = vec_p_cen / np.linalg.norm(vec_p_cen)
 
-        # obtain rpy, assume no roll
         pitch = np.arctan2(np.sqrt(v[0]**2 + v[1]**2), v[2])
         yaw = np.arctan2(v[1], v[0])
 
@@ -58,11 +47,7 @@ def spiral_trajectory(center, radius, num_frames = 100):
     return positions, orientations
 
 def expand(distance, num_frames = 25):
-
-
     start_pos = [0.5, 0, 0]
-
-    # # initialize arrays to store pos and orientation goal of platform
     positions = []
     orientations = []
 
@@ -74,147 +59,153 @@ def expand(distance, num_frames = 25):
 
     return positions, orientations
 
-def gen_trajectory(X_init, X_goal, N = 5):
+def gen_trajectory(X_init, X_goal, N=100):
     """
-    X_init: initial xyz, rpy of the platform
-    X_goal: targoet xyz, rpy of the platform (this is where the docking position is)
+    Two phases, pre-dock and docking
 
-    N     : number of steps (frames here)
+    Pre-Dock: Reach target y, z, r, p, y when x = x_goal - spacing
+
+    Docking: Vary x until x = x_goal
     """
-    X_init = np.array(X_init)
-    X_goal = np.array(X_goal)
+    X_init = np.array(X_init, dtype=float)
+    X_goal = np.array(X_goal, dtype=float)
+    
+    spacing = X_goal[0] * 0.25
+    x_split = X_goal[0] - spacing
+    total_x_dist = X_goal[0] - X_init[0]
+
+    # allocate steps to each phase, proportional to size of dock x vs pre-dock x
+    phase_2_ratio = spacing / total_x_dist
+    n_phase2 = max(1, int(N * phase_2_ratio)) 
+    n_phase1 = N - n_phase2
+
     path = []
 
-    trag_frac = np.linspace(0, 1, N)
-    # number of steps
-    X_curr = X_init
-    path.append(X_init)
+    # phase 1: move to pre-dock pose. 
+    # y, z, r, p, y, reach goal values
+    # get start and end states for phase 1
+    start_state_p1 = X_init.copy()
+    end_state_p1 = X_goal.copy()
+    end_state_p1[0] = x_split
 
-    for frac in trag_frac:
-        X_curr = X_init + (X_goal - X_curr) * frac
-        #   
-        path.append(X_curr)
+    # populate path with stespsteps
+    t1 = np.linspace(0, 1, n_phase1)
+    for frac in t1:
+        p1_state = start_state_p1 + (end_state_p1 - start_state_p1) * frac
+        path.append(p1_state)
 
-    return path
+    # phase 2: move from pre-dock to dock
+    # x goes from X_goal - spacing to X_goal
+    # get start and end states for phase 2
+    start_state_p2 = end_state_p1.copy()
+    end_state_p2 = X_goal.copy()
 
-def update(frame_idx, platform, pos, rpy, ax):
-    """
-    Handles updating the animation
-    1) Clear plot
-    2) obtain leg lengths by solving ik
-    3) plot new platform
-    4) plot the trajectory
-    5) handle labels and stuff
-    """
+    # populate path with steps
+    t2 = np.linspace(0, 1, n_phase2 + 1) 
+    for frac in t2[1:]: # avoid second step where phase 1 ends
+        p2_state = start_state_p2 + (end_state_p2 - start_state_p2) * frac
+        path.append(p2_state)
 
-    # initalize platform params
-    base_pos = [0, 0, 0]
-    base_rpy = [0, 90, 0]
-
-    # clear
-    ax.cla()
-
-    # get target for this frame
-    pos = np.array(pos)
-    rpy = np.array(rpy)
-    target_pos, target_rpy = pos[frame_idx], rpy[frame_idx]
-
-    # ik
-    _, lines, base_pts, plat_pts = platform.solve_leg_lengths(base_pos, base_rpy, target_pos, target_rpy)
-
-    # drawing 
-
-    # plot legs
-    # manage connectivity, start and end position of each line in x, y, and z
-    for name, (start, end) in lines.items():
-        ax.plot(
-            [start[0], end[0]], # x
-            [start[1], end[1]], # y
-            [start[2], end[2]], # z
-            color='blue', linewidth=2
-        )
-
-    # plot triangle connecting legs on each platform
-    platform.plot_triangle(ax, base_pts, ['A', 'B', 'C'], 'black', 'Base')
-    platform.plot_triangle(ax, plat_pts, ['D', 'E', 'F'], 'magenta', 'Platform')
-
-    # plot platforms
-    platform.plot_circle(ax, base_pos, platform.base_r, base_rpy, 'black')
-    platform.plot_circle(ax, target_pos, platform.plat_r, target_rpy, 'magenta')
-
-    # plot the Normal Vector
-    # platform.plot_normal(ax, target_pos, target_rpy)
-    # doesn't seem to work for the animation
-
-    
-    # plot cylinder to visualize tunnel
-    base_r = platform.base_r
-    vis_r = base_r * 0.8
-    platform.plot_cylinder(ax, base_pos, base_rpy, target_pos, target_rpy, vis_r)
-
-
-    # plot trajectory
-    ax.plot(pos[:,0], pos[:,1], pos[:,2], 'g--', alpha=0.3)
-    # plot current target as a dot
-    ax.scatter(*target_pos, color='red', s=10)
-
-    # axis and stuff
-    ax.legend()
-    ax.set_xlim(-0, 15)
-    ax.set_ylim(-7.5, 7.5)
-    ax.set_zlim(-7.5, 7.5)
-
-
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_zlabel('z')
-    # plt.axis('equal')
-
-
+    return np.array(path)
 
 def main():
-    # platform initialization
     base_r = 5
     plat_r = base_r
 
     platform = StewartPlatform33(base_r, plat_r)
     X_init = [1, 0, 0, 0, 90, 0]
-    X_goal = [10, 2, 3, 5, 85, 15]
+    X_goal = [10, 2, 3, 15, 120, 15]
 
-    # expand_frames = 100
-    # spiral_frames = 500
-    # num_frames = expand_frames + spiral_frames
+    ani_frame = 100
 
-    # trag_cen = [25, 0, 0]
-    # trag_r = 15
-    # expan_path, expan_rpy = expand(10, expand_frames)
-    # spiral_path, spiral_rpy = spiral_trajectory(trag_cen, trag_r, spiral_frames)
-
-    # path = expan_path + spiral_path
-    # path_rpy = expan_rpy + spiral_rpy
-
-    ani_frame = 500
-
+    # Ensure we get exactly the number of frames expected by FuncAnimation
     path = gen_trajectory(X_init, X_goal, ani_frame)
     
-
-    
-
+    # Adjust ani_frame to the actual length of the path array
+    actual_frames = len(path)
+    path_xyz = path[:, :3]
+    path_rpy = path[:, 3:]
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
-    # create animation object
     ani = animation.FuncAnimation(
         fig,
         update,
-        frames = num_frames,
-        fargs=(platform, path, path_rpy, ax),
+        frames=actual_frames,
+        fargs=(platform, path_xyz, path_rpy, ax),
         interval=50
     )
 
     plt.show()
 
+def update(frame_idx, platform, pos, rpy, ax):
+    base_pos = [0, 0, 0]
+    base_rpy = [0, 90, 0]
+
+    ax.cla()
+
+    target_pos, target_rpy = pos[frame_idx], rpy[frame_idx]
+
+    _, lines, base_pts, plat_pts = platform.solve_leg_lengths(base_pos, base_rpy, target_pos, target_rpy)
+
+    for name, (start, end) in lines.items():
+        ax.plot(
+            [start[0], end[0]], 
+            [start[1], end[1]], 
+            [start[2], end[2]], 
+            color='blue', linewidth=2
+        )
+
+    platform.plot_triangle(ax, base_pts, ['A', 'B', 'C'], 'black', 'Base')
+    platform.plot_triangle(ax, plat_pts, ['D', 'E', 'F'], 'magenta', 'Platform')
+
+    platform.plot_circle(ax, base_pos, platform.base_r, base_rpy, 'black')
+    platform.plot_circle(ax, target_pos, platform.plat_r, target_rpy, 'magenta')
+    
+    base_r = platform.base_r
+    vis_r = base_r * 0.8
+    platform.plot_cylinder(ax, base_pos, base_rpy, target_pos, target_rpy, vis_r)
+
+    ax.plot(pos[:,0], pos[:,1], pos[:,2], 'g--', alpha=0.3)
+    ax.scatter(*target_pos, color='red', s=10)
+
+    ax.set_xlim(-0, 15)
+    ax.set_ylim(-7.5, 7.5)
+    ax.set_zlim(-7.5, 7.5)
+
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+
+    plt.axis('Equal')
+
+def main():
+    base_r = 5
+    plat_r = base_r
+
+    platform = StewartPlatform33(base_r, plat_r)
+    X_init = [1, 0, 0, 0, 90, 0]
+    X_goal = [10, 2, 3, 15, 120, 15]
+
+    ani_frame = 100
+
+    path = gen_trajectory(X_init, X_goal, ani_frame)
+    path_xyz = path[:, :3]
+    path_rpy = path[:, 3:]
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    ani = animation.FuncAnimation(
+        fig,
+        update,
+        frames = ani_frame,
+        fargs=(platform, path_xyz, path_rpy, ax),
+        interval=50
+    )
+
+    plt.show()
 
 if __name__ == '__main__':
     main()
