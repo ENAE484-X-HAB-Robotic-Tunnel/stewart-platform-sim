@@ -108,37 +108,6 @@ def gen_trajectory(X_init, X_goal, N=100):
 
     return np.array(path)
 
-def main():
-    base_r = 5
-    plat_r = base_r
-
-    platform = StewartPlatform33(base_r, plat_r)
-    X_init = [1, 0, 0, 0, 90, 0]
-    X_goal = [10, 2, 3, 15, 120, 15]
-
-    ani_frame = 100
-
-    # Ensure we get exactly the number of frames expected by FuncAnimation
-    path = gen_trajectory(X_init, X_goal, ani_frame)
-    
-    # Adjust ani_frame to the actual length of the path array
-    actual_frames = len(path)
-    path_xyz = path[:, :3]
-    path_rpy = path[:, 3:]
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    ani = animation.FuncAnimation(
-        fig,
-        update,
-        frames=actual_frames,
-        fargs=(platform, path_xyz, path_rpy, ax),
-        interval=50
-    )
-
-    plt.show()
-
 def update(frame_idx, platform, pos, rpy, ax):
     base_pos = [0, 0, 0]
     base_rpy = [0, 90, 0]
@@ -186,7 +155,7 @@ def main():
 
     platform = StewartPlatform33(base_r, plat_r)
     X_init = [1, 0, 0, 0, 90, 0]
-    X_goal = [10, 2, 3, 15, 120, 15]
+    X_goal = [10, 5, 7, 15, 120, 15]
 
     ani_frame = 100
 
