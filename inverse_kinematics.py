@@ -31,16 +31,22 @@ class StewartPlatform:
         self.X_plat = X_plat
 
     def pre_rotate(self, rpy):
+        """
+        Expects degrees
+        """
         pitch_offset = -90
         r, p, y = rpy
         return (r, p + pitch_offset, y)
 
     def post_rotate(self, rpy):
+        """
+        Expects degrees
+        """
         pitch_offset = 90
         r, p, y = rpy
         return (r, p + pitch_offset, y)
 
-    def rpy2rot(self, rpy, degree = True):
+    def rpy2rot(self, rpy, degree = False):
         if degree == True:
             rpy = np.deg2rad(rpy)
         roll, pitch, yaw = rpy
@@ -49,7 +55,7 @@ class StewartPlatform:
         Rz = np.array([[np.cos(yaw), -np.sin(yaw), 0], [np.sin(yaw), np.cos(yaw), 0], [0, 0, 1]])
         return Rz @ Ry @ Rx
     
-    def rot2rpy(self, R, degree=True):
+    def rot2rpy(self, R, degree=False):
         # check for gimbal lock
         sy = np.sqrt(R[0, 0]**2 + R[1, 0]**2)
         singular = sy < 1e-6
@@ -138,12 +144,14 @@ def main():
     base_pos = [0, 0, 0]
     base_rpy = [0, 90, 0]
     X_base = np.concatenate((base_pos, base_rpy))
-    goal_pos = [2, 0, 0]
-    goal_rpy = [5, 90, 0]
+    goal_pos = [13, 2, -5]
+    goal_rpy = [45, 90, -45]
     X_goal = np.concatenate((goal_pos, goal_rpy))
 
     lengths, lines, base_pts, plat_pts = platform.solve_ik(X_base, X_goal)
     # leg_con_indices = [(1,0), (2,1), (3,2), (4,3), (5,4), (0,5)]
+
+    print(f'lengths: {lengths}')
 
 
     fig = plt.figure()
